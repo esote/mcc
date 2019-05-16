@@ -326,7 +326,7 @@ write_section_names(FILE *const out)
 	static char const *const bss = ".bss";
 
 	/* null section name */
-	if (fwrite(&zero, 1, 1, out) != 1) {
+	if (fwrite(&zero, NULL_LEN, 1, out) != 1) {
 		err(1, "write null name");
 	}
 
