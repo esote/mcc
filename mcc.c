@@ -69,7 +69,6 @@ main(int argc, char *argv[])
 	FILE *out;
 	char *iname;
 	char const *oname;
-	uint32_t i;
 	uint32_t len;
 	uint32_t mem;
 	int ch;
@@ -123,15 +122,6 @@ main(int argc, char *argv[])
 	write_mcode(in, out);
 
 	write_section_names(out);
-
-	i = NULL_LEN + SHSTRTAB_LEN + TEXT_LEN + BSS_LEN;
-
-	/* TODO magic */
-	for (i = 32 - i; i > 0; --i) {
-		if (fwrite(&zero, 1, 1, out) != 1) {
-			err(1, "write zero trailing section names");
-		}
-	}
 
 	write_null_section(out);
 	write_text_section(out, len);
@@ -230,7 +220,8 @@ write_elf_hdr(FILE *const out, uint32_t const len)
 	e.e_entry = TEXT_VADDR + e.e_ehsize + e.e_phnum * e.e_phentsize;
 
 	/* section hdrs start after elf hdr, program hdrs, text, and shstrtab */
-	e.e_shoff = e.e_ehsize + e.e_phnum * e.e_phentsize + len + 32;
+	e.e_shoff = e.e_ehsize + e.e_phnum * e.e_phentsize + len +
+		NULL_LEN + SHSTRTAB_LEN + TEXT_LEN + BSS_LEN;
 
 	if (fwrite(&e, sizeof(Elf32_Ehdr), 1, out) != 1) {
 		err(1, "write elf hdr");
@@ -247,7 +238,7 @@ write_text_hdr(FILE *const out, uint32_t const len)
 	text.p_vaddr = TEXT_VADDR;
 	text.p_paddr = text.p_vaddr;
 	/* TODO magic */
-	text.p_filesz = len + 160;
+	text.p_filesz = len + sizeof(Elf32_Ehdr) + 2 * sizeof(Elf32_Phdr);
 	text.p_memsz = text.p_filesz;
 	/* TODO support self-modifying (PF_X | PF_R | PF_W) */
 	text.p_flags = PF_X | PF_R;
