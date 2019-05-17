@@ -30,7 +30,7 @@ uint32_t	byte_len(FILE *const);
 
 uint32_t	write_elf_hdr(FILE *const, uint32_t const);
 
-void	write_text_hdr(FILE *const, uint32_t const, uint32_t const);
+void	write_text_hdr(FILE *const, uint32_t const, uint32_t const, int const);
 void	write_bss_hdr(FILE *const, uint32_t const);
 
 void	write_mcode(FILE *const, FILE *const);
@@ -77,11 +77,13 @@ main(int argc, char *argv[])
 	uint32_t mem;
 	uint32_t off;
 	int ch;
+	int self_m;
 
 	oname = "a.out";
 	mem = 0;
+	self_m = 0;
 
-	while ((ch = getopt(argc, argv, "m:o:")) != -1) {
+	while ((ch = getopt(argc, argv, "m:o:s")) != -1) {
 		switch (ch) {
 		case 'm':
 			/* TODO remove BSS section if mem == 0 */
@@ -90,9 +92,13 @@ main(int argc, char *argv[])
 		case 'o':
 			oname = optarg;
 			break;
+		case 's':
+			self_m = 1;
+			break;
 		default:
 			(void)fprintf(stderr,
-				"usage: %s [-m memsize] [-o file] [file]\n",
+				"usage: %s [-s] [-m memsize] [-o file] "
+				"[file]\n",
 				argv[0]);
 			return 1;
 		}
@@ -121,7 +127,7 @@ main(int argc, char *argv[])
 
 	off = write_elf_hdr(out, len);
 
-	write_text_hdr(out, off, len);
+	write_text_hdr(out, off, len, self_m);
 	write_bss_hdr(out, mem);
 
 	write_mcode(in, out);
@@ -237,7 +243,8 @@ write_elf_hdr(FILE *const out, uint32_t const len)
 }
 
 void
-write_text_hdr(FILE *const out, uint32_t const off, uint32_t const len)
+write_text_hdr(FILE *const out, uint32_t const off, uint32_t const len,
+	int const self_m)
 {
 	Elf32_Phdr text = {0};
 
@@ -247,8 +254,12 @@ write_text_hdr(FILE *const out, uint32_t const off, uint32_t const len)
 	text.p_paddr = text.p_vaddr;
 	text.p_filesz = len + off;
 	text.p_memsz = text.p_filesz;
-	/* TODO support self-modifying (PF_X | PF_R | PF_W) */
 	text.p_flags = PF_X | PF_R;
+
+	if (self_m) {
+		text.p_flags |= PF_W;
+	}
+
 	text.p_align = PAGE_SIZE;
 
 	if (fwrite(&text, sizeof(Elf32_Phdr), 1, out) != 1) {
