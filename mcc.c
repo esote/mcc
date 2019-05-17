@@ -40,21 +40,21 @@ void	write_section_names(FILE *const);
 void	write_null_section(FILE *const);
 void	write_text_section(FILE *const, uint32_t const);
 void	write_bss_section(FILE *const, uint32_t const);
-void	write_strtab_section(FILE *const, uint32_t const);
+void	write_shstrtab_section(FILE *const, uint32_t const);
 
 #define BSS_VADDR	0x804a000
 #define TEXT_VADDR	0x8049000
 
 /* length of section header string including null terminator */
 #define NULL_LEN	0+1
-#define STRTAB_LEN	9+1
+#define SHSTRTAB_LEN	9+1
 #define TEXT_LEN	5+1
 #define BSS_LEN		4+1
 
 /* index in section header string table section */
-#define STRTAB_INDEX	1
-#define TEXT_INDEX	STRTAB_LEN+1
-#define BSS_INDEX	STRTAB_LEN+TEXT_LEN+1
+#define SHSTRTAB_INDEX	1
+#define TEXT_INDEX	SHSTRTAB_LEN+1
+#define BSS_INDEX	SHSTRTAB_LEN+TEXT_LEN+1
 
 #define PAGE_SIZE	4096
 
@@ -131,8 +131,10 @@ main(int argc, char *argv[])
 
 	write_section_names(out);
 
+	i = NULL_LEN + SHSTRTAB_LEN + TEXT_LEN + BSS_LEN;
+
 	/* TODO magic */
-	for (i = 0; i < 10; ++i) {
+	for (i = 32 - i; i > 0; --i) {
 		if (fwrite(&zero, 1, 1, out) != 1) {
 			err(1, "write zero trailing section names");
 		}
@@ -141,7 +143,7 @@ main(int argc, char *argv[])
 	write_null_section(out);
 	write_text_section(out, len);
 	write_bss_section(out, mem);
-	write_strtab_section(out, len);
+	write_shstrtab_section(out, len);
 
 	if (fclose(in) == EOF) {
 		err(1, "close in");
@@ -321,7 +323,7 @@ write_mcode(FILE *const in, FILE *const out)
 void
 write_section_names(FILE *const out)
 {
-	static char const *const strtab = ".shstrtab";
+	static char const *const shstrtab = ".shstrtab";
 	static char const *const text = ".text";
 	static char const *const bss = ".bss";
 
@@ -330,8 +332,8 @@ write_section_names(FILE *const out)
 		err(1, "write null name");
 	}
 
-	if (fwrite(strtab, STRTAB_LEN, 1, out) != 1) {
-		err(1, "write strtab name");
+	if (fwrite(shstrtab, SHSTRTAB_LEN, 1, out) != 1) {
+		err(1, "write shstrtab name");
 	}
 
 	if (fwrite(text, TEXT_LEN, 1, out) != 1) {
@@ -400,23 +402,23 @@ write_bss_section(FILE *const out, uint32_t const mem)
 }
 
 void
-write_strtab_section(FILE *const out, uint32_t const len)
+write_shstrtab_section(FILE *const out, uint32_t const len)
 {
-	Elf32_Shdr strtab = {0};
+	Elf32_Shdr shstrtab = {0};
 
-	strtab.sh_name = STRTAB_INDEX;
-	strtab.sh_type = SHT_STRTAB;
-	strtab.sh_flags = 0;
-	strtab.sh_addr = 0;
+	shstrtab.sh_name = SHSTRTAB_INDEX;
+	shstrtab.sh_type = SHT_STRTAB;
+	shstrtab.sh_flags = 0;
+	shstrtab.sh_addr = 0;
 	/* TODO magic */
-	strtab.sh_offset = 128 + len;
-	strtab.sh_size = NULL_LEN + STRTAB_LEN + TEXT_LEN + BSS_LEN;
-	strtab.sh_link = 0;
-	strtab.sh_info = 0;
-	strtab.sh_addralign = 0x01;
-	strtab.sh_entsize = 0;
+	shstrtab.sh_offset = 128 + len;
+	shstrtab.sh_size = NULL_LEN + SHSTRTAB_LEN + TEXT_LEN + BSS_LEN;
+	shstrtab.sh_link = 0;
+	shstrtab.sh_info = 0;
+	shstrtab.sh_addralign = 0x01;
+	shstrtab.sh_entsize = 0;
 
-	if (fwrite(&strtab, sizeof(Elf32_Shdr), 1, out) != 1) {
-		err(1, "write strtab section");
+	if (fwrite(&shstrtab, sizeof(Elf32_Shdr), 1, out) != 1) {
+		err(1, "write shstrtab section");
 	}
 }
