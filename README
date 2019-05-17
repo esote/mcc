@@ -4,7 +4,7 @@ Accepts ASCII text '0' and '1'. All other characters are ignored except the
 comment token ';'. Comments begin with ';' and continue until EOL.
 
 Only uses the .bss and .text sections, starting at 0x804a000 and 0x8049000
-respectively. Page size is set to 0x1000 (4096).
+respectively. Page size is set to 0x1000 (4096). .bss is aligned to a 16-byte
+constraint and .text to an 8-byte constraint.
 
-Currently has occasional bugs. It uses a lot of magic values, and may only work
-with the Linux kernel.
+Currently may only work with the Linux kernel.
