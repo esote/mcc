@@ -117,13 +117,6 @@ main(int argc, char *argv[])
 
 	write_elf_hdr(out, len);
 
-	/* TODO magic */
-	for (i = 0; i < 12; ++i) {
-		if (fwrite(&zero, 1, 1, out) != 1) {
-			err(1, "write zero trailing elf hdr");
-		}
-	}
-
 	write_text_hdr(out, len);
 	write_bss_hdr(out, mem);
 
@@ -223,19 +216,21 @@ write_elf_hdr(FILE *const out, uint32_t const len)
 	e.e_version = EV_CURRENT;
 	e.e_flags = 0;
 
-	/* TODO magic */
-	e.e_entry = TEXT_VADDR + 0x80;
 	e.e_ehsize = sizeof(Elf32_Ehdr);
+	e.e_phentsize = sizeof(Elf32_Phdr);
+	e.e_shentsize = sizeof(Elf32_Shdr);
 
 	e.e_phnum = 2;
-	e.e_phentsize = sizeof(Elf32_Phdr);
-	e.e_phoff = e.e_phnum * e.e_phentsize;
-
 	e.e_shnum = 4;
-	e.e_shentsize = sizeof(Elf32_Shdr);
-	e.e_shoff = e.e_shnum * e.e_shentsize + len;
-
 	e.e_shstrndx = 3;
+
+	/* program hdrs start after elf hdr */
+	e.e_phoff = e.e_ehsize;
+
+	e.e_entry = TEXT_VADDR + e.e_ehsize + e.e_phnum * e.e_phentsize;
+
+	/* section hdrs start after elf hdr, program hdrs, text, and shstrtab */
+	e.e_shoff = e.e_ehsize + e.e_phnum * e.e_phentsize + len + 32;
 
 	if (fwrite(&e, sizeof(Elf32_Ehdr), 1, out) != 1) {
 		err(1, "write elf hdr");
@@ -365,9 +360,8 @@ write_text_section(FILE *const out, uint32_t const len)
 	text.sh_name = TEXT_INDEX;
 	text.sh_type = SHT_PROGBITS;
 	text.sh_flags = SHF_ALLOC | SHF_EXECINSTR;
-	/* TODO magic */
-	text.sh_addr = TEXT_VADDR + 0x80;
-	text.sh_offset = 0x80;
+	text.sh_addr = TEXT_VADDR + sizeof(Elf32_Ehdr) + 2 * sizeof(Elf32_Phdr);
+	text.sh_offset = sizeof(Elf32_Ehdr) + 2 * sizeof(Elf32_Phdr);
 	text.sh_size = len;
 	text.sh_link = 0;
 	text.sh_info = 0;
@@ -411,7 +405,7 @@ write_shstrtab_section(FILE *const out, uint32_t const len)
 	shstrtab.sh_flags = 0;
 	shstrtab.sh_addr = 0;
 	/* TODO magic */
-	shstrtab.sh_offset = 128 + len;
+	shstrtab.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + len;
 	shstrtab.sh_size = NULL_LEN + SHSTRTAB_LEN + TEXT_LEN + BSS_LEN;
 	shstrtab.sh_link = 0;
 	shstrtab.sh_info = 0;
