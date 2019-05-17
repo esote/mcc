@@ -28,9 +28,9 @@
 
 uint32_t	byte_len(FILE *const);
 
-void	write_elf_hdr(FILE *const, uint32_t const);
+uint32_t	write_elf_hdr(FILE *const, uint32_t const);
 
-void	write_text_hdr(FILE *const, uint32_t const);
+void	write_text_hdr(FILE *const, uint32_t const, uint32_t const);
 void	write_bss_hdr(FILE *const, uint32_t const);
 
 void	write_mcode(FILE *const, FILE *const);
@@ -38,23 +38,27 @@ void	write_mcode(FILE *const, FILE *const);
 void	write_section_names(FILE *const);
 
 void	write_null_section(FILE *const);
-void	write_text_section(FILE *const, uint32_t const);
+void	write_text_section(FILE *const, uint32_t const, uint32_t const);
 void	write_bss_section(FILE *const, uint32_t const);
-void	write_shstrtab_section(FILE *const, uint32_t const);
+void	write_shstrtab_section(FILE *const, uint32_t const, uint32_t const);
 
 #define BSS_VADDR	0x804a000
 #define TEXT_VADDR	0x8049000
 
 /* length of section header string including null terminator */
-#define NULL_LEN	0+1
-#define SHSTRTAB_LEN	9+1
-#define TEXT_LEN	5+1
-#define BSS_LEN		4+1
+#define NULL_LEN	(0 + 1)
+#define SHSTRTAB_LEN	(9 + 1)
+#define TEXT_LEN	(5 + 1)
+#define BSS_LEN		(4 + 1)
+
+#define SHSTRTAB_ADDRALIGN	(1 << 0)
+#define BSS_ADDRALIGN		(1 << 2)
+#define TEXT_ADDRALIGN		(1 << 4)
 
 /* index in section header string table section */
 #define SHSTRTAB_INDEX	1
-#define TEXT_INDEX	SHSTRTAB_LEN+1
-#define BSS_INDEX	SHSTRTAB_LEN+TEXT_LEN+1
+#define TEXT_INDEX	(SHSTRTAB_LEN + 1)
+#define BSS_INDEX	(SHSTRTAB_LEN + TEXT_LEN+1)
 
 #define PAGE_SIZE	4096
 
@@ -71,6 +75,7 @@ main(int argc, char *argv[])
 	char const *oname;
 	uint32_t len;
 	uint32_t mem;
+	uint32_t off;
 	int ch;
 
 	oname = "a.out";
@@ -114,9 +119,9 @@ main(int argc, char *argv[])
 
 	len = byte_len(in);
 
-	write_elf_hdr(out, len);
+	off = write_elf_hdr(out, len);
 
-	write_text_hdr(out, len);
+	write_text_hdr(out, off, len);
 	write_bss_hdr(out, mem);
 
 	write_mcode(in, out);
@@ -124,9 +129,9 @@ main(int argc, char *argv[])
 	write_section_names(out);
 
 	write_null_section(out);
-	write_text_section(out, len);
+	write_text_section(out, off, len);
 	write_bss_section(out, mem);
-	write_shstrtab_section(out, len);
+	write_shstrtab_section(out, off, len);
 
 	if (fclose(in) == EOF) {
 		err(1, "close in");
@@ -182,7 +187,7 @@ out:
 	return len / 8;
 }
 
-void
+uint32_t
 write_elf_hdr(FILE *const out, uint32_t const len)
 {
 	Elf32_Ehdr e = {0};
@@ -226,10 +231,13 @@ write_elf_hdr(FILE *const out, uint32_t const len)
 	if (fwrite(&e, sizeof(Elf32_Ehdr), 1, out) != 1) {
 		err(1, "write elf hdr");
 	}
+
+	/* return offset to mcode */
+	return e.e_ehsize + e.e_phnum * e.e_phentsize;
 }
 
 void
-write_text_hdr(FILE *const out, uint32_t const len)
+write_text_hdr(FILE *const out, uint32_t const off, uint32_t const len)
 {
 	Elf32_Phdr text = {0};
 
@@ -237,8 +245,7 @@ write_text_hdr(FILE *const out, uint32_t const len)
 	text.p_offset = 0;
 	text.p_vaddr = TEXT_VADDR;
 	text.p_paddr = text.p_vaddr;
-	/* TODO magic */
-	text.p_filesz = len + sizeof(Elf32_Ehdr) + 2 * sizeof(Elf32_Phdr);
+	text.p_filesz = len + off;
 	text.p_memsz = text.p_filesz;
 	/* TODO support self-modifying (PF_X | PF_R | PF_W) */
 	text.p_flags = PF_X | PF_R;
@@ -344,19 +351,19 @@ write_null_section(FILE *const out)
 }
 
 void
-write_text_section(FILE *const out, uint32_t const len)
+write_text_section(FILE *const out, uint32_t const off, uint32_t const len)
 {
 	Elf32_Shdr text = {0};
 
 	text.sh_name = TEXT_INDEX;
 	text.sh_type = SHT_PROGBITS;
 	text.sh_flags = SHF_ALLOC | SHF_EXECINSTR;
-	text.sh_addr = TEXT_VADDR + sizeof(Elf32_Ehdr) + 2 * sizeof(Elf32_Phdr);
-	text.sh_offset = sizeof(Elf32_Ehdr) + 2 * sizeof(Elf32_Phdr);
+	text.sh_addr = TEXT_VADDR + off;
+	text.sh_offset = off;
 	text.sh_size = len;
 	text.sh_link = 0;
 	text.sh_info = 0;
-	text.sh_addralign = 0x10;
+	text.sh_addralign = TEXT_ADDRALIGN;
 	text.sh_entsize = 0;
 
 	if (fwrite(&text, sizeof(Elf32_Shdr), 1, out) != 1) {
@@ -378,7 +385,7 @@ write_bss_section(FILE *const out, uint32_t const mem)
 	bss.sh_size = mem;
 	bss.sh_link = 0;
 	bss.sh_info = 0;
-	bss.sh_addralign = 0x04;
+	bss.sh_addralign = BSS_ADDRALIGN;
 	bss.sh_entsize = 0;
 
 	if (fwrite(&bss, sizeof(Elf32_Shdr), 1, out) != 1) {
@@ -387,7 +394,7 @@ write_bss_section(FILE *const out, uint32_t const mem)
 }
 
 void
-write_shstrtab_section(FILE *const out, uint32_t const len)
+write_shstrtab_section(FILE *const out, uint32_t const off, uint32_t const len)
 {
 	Elf32_Shdr shstrtab = {0};
 
@@ -396,11 +403,11 @@ write_shstrtab_section(FILE *const out, uint32_t const len)
 	shstrtab.sh_flags = 0;
 	shstrtab.sh_addr = 0;
 	/* TODO magic */
-	shstrtab.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + len;
+	shstrtab.sh_offset = off + len;
 	shstrtab.sh_size = NULL_LEN + SHSTRTAB_LEN + TEXT_LEN + BSS_LEN;
 	shstrtab.sh_link = 0;
 	shstrtab.sh_info = 0;
-	shstrtab.sh_addralign = 0x01;
+	shstrtab.sh_addralign = SHSTRTAB_ADDRALIGN;
 	shstrtab.sh_entsize = 0;
 
 	if (fwrite(&shstrtab, sizeof(Elf32_Shdr), 1, out) != 1) {
