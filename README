@@ -13,3 +13,5 @@ Programmer's manual:
 
 	.bss is aligned to a 16-byte constraint and .text to an 8-byte
 	constraint.
+
+	If memsize is zero no .bss section will be written for the executable.

@@ -30,7 +30,7 @@
 
 uint64_t	byte_len(FILE *const);
 void		write_mcode(FILE *const, FILE *const);
-void		write_section_names(FILE *const);
+void		write_section_names(FILE *const, struct mcc_opts const *const);
 
 #define COMMENT	';'
 
@@ -43,6 +43,7 @@ main(int argc, char *argv[])
 	char *end;
 	char *iname;
 	char const *oname;
+	uint64_t len;
 	uint64_t mem;
 	int use_64;
 	int ch;
@@ -65,13 +66,15 @@ main(int argc, char *argv[])
 			opts.text_vaddr.n32 = 0x8049000;
 			break;
 		case 'm':
-			/* TODO remove BSS section if mem == 0 */
 			mem = strtoull(optarg, &end, 10);
 
 			if (errno == EINVAL || errno == ERANGE) {
 				err(1, "memsize invalid");
 			} else if (optarg == end) {
 				errx(1, "no memsize read");
+			} else if (mem == 0) {
+				warnx("if memsize is zero no .bss section will "
+					"be written");
 			}
 
 			break;
@@ -90,10 +93,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (mem == 0) {
-		warnx("memsize is 0, using .bss could segfault or overflow "
-			"into other sections");
-	} else if (!use_64 && mem > UINT32_MAX) {
+	if (!use_64 && mem > UINT32_MAX) {
 		warnx("memsize may overflow");
 	}
 
@@ -111,32 +111,52 @@ main(int argc, char *argv[])
 		err(1, "open out");
 	}
 
+	len = byte_len(in);
+
+	if (!use_64 && len > UINT32_MAX) {
+		warnx("input file byte length may overflow");
+	}
+
 	if (use_64) {
 		opts.mem.n64 = mem;
-		opts.len.n64 = byte_len(in);
+		opts.len.n64 = len;
 		write_ehdr64(out, &opts);
 		write_phdr64_text(out, &opts);
-		write_phdr64_bss(out, &opts);
 	} else {
 		opts.mem.n32 = (uint32_t)mem;
-		opts.len.n32 = (uint32_t)byte_len(in);
+		opts.len.n32 = (uint32_t)len;
 		write_ehdr32(out, &opts);
 		write_phdr32_text(out, &opts);
-		write_phdr32_bss(out, &opts);
+	}
+
+	if (opts.mem.n32 != 0) {
+		if (use_64) {
+			write_phdr64_bss(out, &opts);
+		} else {
+			write_phdr32_bss(out, &opts);
+		}
 	}
 
 	write_mcode(in, out);
-	write_section_names(out);
+	write_section_names(out, &opts);
 
 	if (use_64) {
 		write_shdr64_null(out);
 		write_shdr64_text(out, &opts);
-		write_shdr64_bss(out, &opts);
+
+		if (opts.mem.n64 != 0) {
+			write_shdr64_bss(out, &opts);
+		}
+
 		write_shdr64_shstrtab(out, &opts);
 	} else {
 		write_shdr32_null(out);
 		write_shdr32_text(out, &opts);
-		write_shdr32_bss(out, &opts);
+
+		if (opts.mem.n32 != 0) {
+			write_shdr32_bss(out, &opts);
+		}
+
 		write_shdr32_shstrtab(out, &opts);
 	}
 
@@ -233,7 +253,7 @@ write_mcode(FILE *const in, FILE *const out)
 }
 
 void
-write_section_names(FILE *const out)
+write_section_names(FILE *const out, struct mcc_opts const *const opts)
 {
 	static char const *const shstrtab = ".shstrtab";
 	static char const *const text = ".text";
@@ -253,7 +273,7 @@ write_section_names(FILE *const out)
 		err(1, "write text name");
 	}
 
-	if (fwrite(bss, BSS_LEN, 1, out) != 1) {
+	if (opts->mem.n32 != 0 && fwrite(bss, BSS_LEN, 1, out) != 1) {
 		err(1, "write bss name");
 	}
 }

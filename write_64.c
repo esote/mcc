@@ -32,9 +32,15 @@ write_ehdr64(FILE *const out, struct mcc_opts *const opts)
 	e.e_phentsize = sizeof(Elf64_Phdr);
 	e.e_shentsize = sizeof(Elf64_Shdr);
 
-	e.e_phnum = 2;
-	e.e_shnum = 4;
-	e.e_shstrndx = 3;
+	if (opts->mem.n64 == 0) {
+		e.e_phnum = 1;
+		e.e_shnum = 3;
+		e.e_shstrndx = 2;
+	} else {
+		e.e_phnum = 2;
+		e.e_shnum = 4;
+		e.e_shstrndx = 3;
+	}
 
 	/* program hdrs start after elf hdr */
 	e.e_phoff = e.e_ehsize;
@@ -45,7 +51,11 @@ write_ehdr64(FILE *const out, struct mcc_opts *const opts)
 
 	/* section hdrs start after elf hdr, program hdrs, text, and shstrtab */
 	e.e_shoff = opts->off.n64 + opts->len.n64 + NULL_LEN + SHSTRTAB_LEN +
-		TEXT_LEN + BSS_LEN;
+		TEXT_LEN;
+
+	if (opts->mem.n64 != 0) {
+		e.e_shoff += BSS_LEN;
+	}
 
 	if (fwrite(&e, sizeof(Elf64_Ehdr), 1, out) != 1) {
 		err(1, "write ehdr64");
@@ -160,7 +170,12 @@ write_shdr64_shstrtab(FILE *const out, struct mcc_opts const *const opts)
 	shstrtab.sh_flags = 0;
 	shstrtab.sh_addr = 0;
 	shstrtab.sh_offset = opts->off.n64 + opts->len.n64;
-	shstrtab.sh_size = NULL_LEN + SHSTRTAB_LEN + TEXT_LEN + BSS_LEN;
+	shstrtab.sh_size = NULL_LEN + SHSTRTAB_LEN + TEXT_LEN;
+
+	if (opts->mem.n64 != 0) {
+		shstrtab.sh_size += BSS_LEN;
+	}
+
 	shstrtab.sh_link = 0;
 	shstrtab.sh_info = 0;
 	shstrtab.sh_addralign = SHSTRTAB_ADDRALIGN;
