@@ -1,10 +1,15 @@
-Reads machine code text and produces i386 ELF executables.
+Reads machine code text and produces x86-64 or i386 Linux-compatible ELF
+executables.
 
 Accepts ASCII text '0' and '1'. All other characters are ignored except the
 comment token ';'. Comments begin with ';' and continue until EOL.
 
-Only uses the .bss and .text sections, starting at 0x804a000 and 0x8049000
-respectively. Page size is set to 0x1000 (4096). .bss is aligned to a 16-byte
-constraint and .text to an 8-byte constraint.
+Programmer's manual:
+	In 64-bit mode .bss and .text start at 0x402000 and 0x401000
+	respectively, and in 32-bit mode 0x804a000 and 0x8049000 respectively.
 
-Currently may only work with the Linux kernel.
+	Program header segment alignment is set to 0x1000 (page size on most
+	systems).
+
+	.bss is aligned to a 16-byte constraint and .text to an 8-byte
+	constraint.

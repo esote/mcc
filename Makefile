@@ -1,8 +1,14 @@
-mcc: mcc.c
-	gcc -O2 -o mcc.out mcc.c
+PROG=	mcc
+SRCS=	mcc.c write_32.c write_64.c
 
-debug: mcc.c
-	gcc -g -Wall -Wextra -Wconversion -o mcc.out mcc.c
+CFLAGS=		-O2 -fstack-protector -D_FORTIFY_SOURCE=2 -pie -fPIE
+LDFLAGS=	-Wl,-z,now -Wl,-z,relro
+
+$(PROG): $(SRCS)
+	gcc $(CFLAGS) $(LDFLAGS) -o $(PROG).out $(SRCS)
+
+debug: $(SRCS)
+	gcc -g -Wall -Wextra -Wconversion -o $(PROG).out $(SRCS)
 
 clean:
-	rm -f mcc.out
+	rm -f $(PROG).out
