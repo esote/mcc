@@ -41,7 +41,7 @@ main(int argc, char *argv[])
 	FILE *out;
 	struct mcc_opts opts;
 	char *end;
-	char *iname;
+	char const *iname;
 	char const *oname;
 	uint64_t len;
 	uint64_t mem;
@@ -177,12 +177,13 @@ main(int argc, char *argv[])
 uint64_t
 byte_len(FILE *const in)
 {
-	unsigned char buf;
+	uint64_t i;
 	uint64_t len;
+	unsigned char buf;
 
 	len = 0;
 
-	while (fread(&buf, 1, 1, in) == 1) {
+	for (i = 0; fread(&buf, 1, 1, in) == 1; ) {
 		switch (buf) {
 		case COMMENT:
 			/* gulp until newline or EOF */
@@ -196,13 +197,17 @@ byte_len(FILE *const in)
 			break;
 		case '0':
 		case '1':
-			len++;
+			if (++i == 8) {
+				i = 0;
+				len++;
+			}
+
 			break;
 		}
 	}
 
 out:
-	if (len % 8 != 0) {
+	if (i != 0) {
 		errx(1, "weird bytes");
 	}
 
@@ -210,7 +215,7 @@ out:
 		err(1, "fseek");
 	}
 
-	return len / 8;
+	return len;
 }
 
 void
