@@ -1,0 +1,71 @@
+.\"
+.\" Copyright (C) 2019  Esote
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU Affero General Public License as published
+.\" by the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU Affero General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU Affero General Public License
+.\" along with this program.  If not, see <https://www.gnu.org/licenses/>.
+.\"
+.Dd $Mdocdate: May 18 2019 $
+.Dt MCC 1
+.Os
+.Sh NAME
+.Nm mcc
+.Nd machine code compiler
+.Sh SYNOPSIS
+.Nm mcc
+.Op Fl 3s
+.Op Fl m Ar memsize
+.Op Fl o Ar file
+file
+.Sh DESCRIPTION
+.Nm mcc
+is a machine code compiler.
+It reads ASCII text '0' and '1' mapping to machine code instructions.
+All other characters are ignored except the comment token ';'.
+Comments begin with ';' and continue until EOL.
+.Pp
+Use the
+.Fl o
+option to specify the output filename.
+The default is to put the executable in \fIa.out\fR.
+.Pp
+Supports little-endian x86-64 and i386 execution environments using the
+System V application binary interface. 64-bit is the default mode,
+32-bit mode is specified with the
+.Fl s
+option.
+.Pp
+When writing to the .bss section, specify the size of memory reserved
+using the
+.Fl m
+option.
+If the size is zero (default), no .bss section will be written for the
+executable.
+.Pp
+In 64-bit mode the .bss and .text sections start at 0x402000 and
+0x401000 respectively, and in 32-bit mode 0x804a000 and 0x8049000
+respectively.
+Program header segment alignment is set to 0x1000 (the page size on most
+systems).
+.Pp
+ .bss is aligned to a 16-byte constraint and .text to an 8-byte
+constraint.
+.Sh AUTHORS
+.Nm mcc
+was written by
+.An Esote
+.Sh COPYRIGHT
+Copyright (c) 2019 Esote.
+There is NO warranty.
+You may redistribute this software under the terms of the GNU Affero General
+Public License.
+For more information, see the LICENSE file.

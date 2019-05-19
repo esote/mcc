@@ -86,8 +86,7 @@ main(int argc, char *argv[])
 			break;
 		default:
 			(void)fprintf(stderr,
-				"usage: %s [-3s] [-m memsize] [-o file] "
-				"[file]\n",
+				"usage: %s [-3s] [-m memsize] [-o file] file\n",
 				argv[0]);
 			return 1;
 		}

@@ -1,17 +1,37 @@
-Reads machine code text and produces x86-64 or i386 Linux-compatible ELF
-executables.
+NAME
+	mcc - machine code compiler
 
-Accepts ASCII text '0' and '1'. All other characters are ignored except the
-comment token ';'. Comments begin with ';' and continue until EOL.
+SYNOPSIS
+	mcc [-3s] [-m memsize] [-o file] file
 
-Programmer's manual:
-	In 64-bit mode .bss and .text start at 0x402000 and 0x401000
-	respectively, and in 32-bit mode 0x804a000 and 0x8049000 respectively.
+DESCRIPTION
+	mcc is a machine code compiler. It reads ASCII text '0' and '1' mapping
+	to machine code instructions. All other characters are ignored except
+	the comment token ';'. Comments begin with ';' and continue until EOL.
 
-	Program header segment alignment is set to 0x1000 (page size on most
-	systems).
+	Use the -o option to specify the output filename. The default is to put
+	the executable in a.out.
+
+	Supports little-endian x86-64 and i386 execution environments using the
+	System V application binary interface. 64-bit is the default mode,
+	32-bit mode is specified with the -s option.
+
+	When writing to the .bss section, specify the size of memory reserved
+	using the -m option. If the size is zero (default), no .bss section will
+	be written for the executable.
+
+	In 64-bit mode the .bss and .text sections start at 0x402000 and
+	0x401000 respectively, and in 32-bit mode 0x804a000 and 0x8049000
+	respectively. Program header segment alignment is set to 0x1000 (the
+	page size on most systems).
 
 	.bss is aligned to a 16-byte constraint and .text to an 8-byte
 	constraint.
 
-	If memsize is zero no .bss section will be written for the executable.
+AUTHORS
+	mcc was written by Esote.
+
+COPYRIGHT
+	Copyright (c) 2019 Esote. There is NO warranty. You may redistribute
+	this software under the terms of the GNU Affero General Public License.
+	For more information, see the LICENSE file.
