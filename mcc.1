@@ -41,7 +41,7 @@ The default is to put the executable in \fIa.out\fR.
 Supports little-endian x86-64 and i386 execution environments using the
 System V application binary interface. 64-bit is the default mode,
 32-bit mode is specified with the
-.Fl s
+.Fl 3
 option.
 .Pp
 When writing to the .bss section, specify the size of memory reserved
@@ -59,6 +59,10 @@ systems).
 .Pp
  .bss is aligned to a 16-byte constraint and .text to an 8-byte
 constraint.
+.Pp
+Use the
+.Fl s
+option to mark the .text section as writable, allowing self-modifying code.
 .Sh AUTHORS
 .Nm mcc
 was written by

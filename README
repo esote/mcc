@@ -14,7 +14,7 @@ DESCRIPTION
 
 	Supports little-endian x86-64 and i386 execution environments using the
 	System V application binary interface. 64-bit is the default mode,
-	32-bit mode is specified with the -s option.
+	32-bit mode is specified with the -3 option.
 
 	When writing to the .bss section, specify the size of memory reserved
 	using the -m option. If the size is zero (default), no .bss section will
@@ -27,6 +27,9 @@ DESCRIPTION
 
 	.bss is aligned to a 16-byte constraint and .text to an 8-byte
 	constraint.
+
+	Use the -s option to mark the .text section as writable, allowing
+	self-modifying code.
 
 AUTHORS
 	mcc was written by Esote.
