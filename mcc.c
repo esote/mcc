@@ -128,7 +128,7 @@ main(int argc, char *argv[])
 		write_phdr32_text(out, &opts);
 	}
 
-	if (opts.mem.n32 != 0) {
+	if (opts.mem.n64 != 0) {
 		if (use_64) {
 			write_phdr64_bss(out, &opts);
 		} else {
@@ -277,7 +277,7 @@ write_section_names(FILE *const out, struct mcc_opts const *const opts)
 		err(1, "write text name");
 	}
 
-	if (opts->mem.n32 != 0 && fwrite(bss, BSS_LEN, 1, out) != 1) {
+	if (opts->mem.n64 != 0 && fwrite(bss, BSS_LEN, 1, out) != 1) {
 		err(1, "write bss name");
 	}
 }
