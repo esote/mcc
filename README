@@ -2,7 +2,7 @@ NAME
 	mcc - machine code compiler
 
 SYNOPSIS
-	mcc [-3s] [-m memsize] [-o file] file
+	mcc [-3s] [-b addr] [-m memsize] [-o file] [-t addr] file
 
 DESCRIPTION
 	mcc is a machine code compiler. It reads ASCII text '0' and '1' mapping
@@ -22,8 +22,10 @@ DESCRIPTION
 
 	In 64-bit mode the .bss and .text sections start at 0x402000 and
 	0x401000 respectively, and in 32-bit mode 0x804a000 and 0x8049000
-	respectively. Program header segment alignment is set to 0x1000 (the
-	page size on most systems).
+	respectively. Use the -b and -t options to specify custom addresses.
+
+	Program header segment alignment is set to 0x1000 (the page size on most
+	systems).
 
 	.bss is aligned to a 16-byte constraint and .text to an 8-byte
 	constraint.

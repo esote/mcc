@@ -23,8 +23,10 @@
 .Sh SYNOPSIS
 .Nm mcc
 .Op Fl 3s
+.Op Fl b Ar addr
 .Op Fl m Ar memsize
 .Op Fl o Ar file
+.Op Fl t Ar addr
 file
 .Sh DESCRIPTION
 .Nm mcc
@@ -54,6 +56,12 @@ executable.
 In 64-bit mode the .bss and .text sections start at 0x402000 and
 0x401000 respectively, and in 32-bit mode 0x804a000 and 0x8049000
 respectively.
+Use the
+.Fl b
+and
+.Fl t
+options to specify custom addresses.
+.Pp
 Program header segment alignment is set to 0x1000 (the page size on most
 systems).
 .Pp

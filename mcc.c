@@ -43,36 +43,48 @@ main(int argc, char *argv[])
 	char *end;
 	char const *iname;
 	char const *oname;
-	uint64_t len;
-	uint64_t mem;
-	int use_64;
 	int ch;
+	int use_64;
+	int use_bss_addr;
+	int use_text_addr;
 
 	opts.self_m = 0;
-
-	oname = "a.out";
-	mem = 0;
-
-	/* default 64-bit */
-	use_64 = 1;
+	opts.mem.n64 = 0;
 	opts.bss_vaddr.n64 = 0x402000;
 	opts.text_vaddr.n64 = 0x401000;
 
-	while ((ch = getopt(argc, argv, "3m:o:s")) != -1) {
+	oname = "a.out";
+
+	/* default 64-bit */
+	use_64 = 1;
+
+	use_bss_addr = 0;
+	use_text_addr = 0;
+
+	while ((ch = getopt(argc, argv, "3b:m:o:st:")) != -1) {
 		switch (ch) {
 		case '3':
 			use_64 = 0;
-			opts.bss_vaddr.n32 = 0x804a000;
-			opts.text_vaddr.n32 = 0x8049000;
+			break;
+		case 'b':
+			opts.bss_vaddr.n64 = strtoull(optarg, &end, 0);
+
+			if (errno == EINVAL || errno == ERANGE) {
+				err(1, "bss address invalid");
+			} else if (optarg == end) {
+				err(1, "no bss address read");
+			}
+
+			use_bss_addr = 1;
 			break;
 		case 'm':
-			mem = strtoull(optarg, &end, 10);
+			opts.mem.n64 = strtoull(optarg, &end, 10);
 
 			if (errno == EINVAL || errno == ERANGE) {
 				err(1, "memsize invalid");
 			} else if (optarg == end) {
 				errx(1, "no memsize read");
-			} else if (mem == 0) {
+			} else if (opts.mem.n64 == 0) {
 				warnx("if memsize is zero no .bss section will "
 					"be written");
 			}
@@ -84,16 +96,24 @@ main(int argc, char *argv[])
 		case 's':
 			opts.self_m = 1;
 			break;
+		case 't':
+			opts.text_vaddr.n64 = strtoull(optarg, &end, 0);
+
+			if (errno == EINVAL || errno == ERANGE) {
+				err(1, "text address invalid");
+			} else if (optarg == end) {
+				err(1, "no text address read");
+			}
+
+			use_text_addr = 1;
+			break;
 		default:
 			(void)fprintf(stderr,
-				"usage: %s [-3s] [-m memsize] [-o file] file\n",
+				"usage: %s [-3s] [-b addr] [-m memsize] "
+				"[-o file] [-t addr] file\n",
 				argv[0]);
 			return 1;
 		}
-	}
-
-	if (!use_64 && mem > UINT32_MAX) {
-		warnx("memsize may overflow");
 	}
 
 	argv += optind;
@@ -110,20 +130,34 @@ main(int argc, char *argv[])
 		err(1, "open out");
 	}
 
-	len = byte_len(in);
+	opts.len.n64 = byte_len(in);
 
-	if (!use_64 && len > UINT32_MAX) {
-		warnx("input file byte length may overflow");
+	if (!use_64) {
+		if (opts.mem.n64 > UINT32_MAX) {
+			warnx("memsize is larger than 32 bits");
+		}
+
+		if (opts.len.n64 > UINT32_MAX) {
+			warnx("input file byte length is larger than 32 bits");
+		}
+
+		if (!use_bss_addr) {
+			opts.bss_vaddr.n32 = 0x804a000;
+		} else if (opts.bss_vaddr.n64 > UINT32_MAX) {
+			warnx("bss address is larger than 32 bits");
+		}
+
+		if (!use_text_addr) {
+			opts.text_vaddr.n32 = 0x8049000;
+		} else if (opts.text_vaddr.n64 > UINT32_MAX) {
+			warnx("text address is larger than 32 bits");
+		}
 	}
 
 	if (use_64) {
-		opts.mem.n64 = mem;
-		opts.len.n64 = len;
 		write_ehdr64(out, &opts);
 		write_phdr64_text(out, &opts);
 	} else {
-		opts.mem.n32 = (uint32_t)mem;
-		opts.len.n32 = (uint32_t)len;
 		write_ehdr32(out, &opts);
 		write_phdr32_text(out, &opts);
 	}
