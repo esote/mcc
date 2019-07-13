@@ -2,12 +2,13 @@ NAME
 	mcc - machine code compiler
 
 SYNOPSIS
-	mcc [-3s] [-b addr] [-m memsize] [-o file] [-t addr] file
+	mcc [-3hs] [-b addr] [-m memsize] [-o file] [-t addr] file
 
 DESCRIPTION
-	mcc is a machine code compiler. It reads ASCII text '0' and '1' mapping
-	to machine code instructions. All other characters are ignored except
-	the comment token ';'. Comments begin with ';' and continue until EOL.
+	mcc is a machine code compiler. It reads binary ASCII text '0' and '1'
+	mapping to machine code instructions. All other characters are ignored
+	except the comment token ';'. Comments begin with ';' and continue until
+	EOL. The -h option enables parsing hexadecimal rather than binary text.
 
 	Use the -o option to specify the output filename. The default is to put
 	the executable in a.out.

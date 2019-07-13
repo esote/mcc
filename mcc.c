@@ -28,8 +28,8 @@
 #include "mcc.h"
 #include "write.h"
 
-uint64_t	byte_len(FILE *const);
-void		write_mcode(FILE *const, FILE *const);
+uint64_t	byte_len(FILE *const, int const);
+void		write_mcode(FILE *const, FILE *const, int const);
 void		write_section_names(FILE *const, struct mcc_opts const *const);
 
 #define COMMENT	';'
@@ -44,6 +44,7 @@ main(int argc, char *argv[])
 	char const *iname;
 	char const *oname;
 	int ch;
+	int hex;
 	int use_64;
 	int use_bss_addr;
 	int use_text_addr;
@@ -55,13 +56,15 @@ main(int argc, char *argv[])
 
 	oname = "a.out";
 
+	hex = 0;
+
 	/* default 64-bit */
 	use_64 = 1;
 
 	use_bss_addr = 0;
 	use_text_addr = 0;
 
-	while ((ch = getopt(argc, argv, "3b:m:o:st:")) != -1) {
+	while ((ch = getopt(argc, argv, "3b:hm:o:st:")) != -1) {
 		switch (ch) {
 		case '3':
 			use_64 = 0;
@@ -76,6 +79,9 @@ main(int argc, char *argv[])
 			}
 
 			use_bss_addr = 1;
+			break;
+		case 'h':
+			hex = 1;
 			break;
 		case 'm':
 			opts.mem.n64 = strtoull(optarg, &end, 10);
@@ -130,7 +136,7 @@ main(int argc, char *argv[])
 		err(1, "open out");
 	}
 
-	opts.len.n64 = byte_len(in);
+	opts.len.n64 = byte_len(in, hex);
 
 	if (!use_64) {
 		if (opts.mem.n64 > UINT32_MAX) {
@@ -170,7 +176,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	write_mcode(in, out);
+	write_mcode(in, out, hex);
 	write_section_names(out, &opts);
 
 	if (use_64) {
@@ -209,7 +215,7 @@ main(int argc, char *argv[])
 }
 
 uint64_t
-byte_len(FILE *const in)
+byte_len(FILE *const in, int const hex)
 {
 	uint64_t i;
 	uint64_t len;
@@ -231,12 +237,41 @@ byte_len(FILE *const in)
 			break;
 		case '0':
 		case '1':
-			if (++i == 8) {
-				i = 0;
-				len++;
+			if (hex) {
+				i += 4;
+			} else {
+				i++;
 			}
-
 			break;
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case 'a':
+		case 'b':
+		case 'c':
+		case 'd':
+		case 'e':
+		case 'f':
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'D':
+		case 'E':
+		case 'F':
+			if (hex) {
+				i += 4;
+			}
+			break;
+		}
+
+		if (i == 8) {
+			i = 0;
+			len++;
 		}
 	}
 
@@ -253,39 +288,74 @@ out:
 }
 
 void
-write_mcode(FILE *const in, FILE *const out)
+write_mcode(FILE *const in, FILE *const out, int const hex)
 {
+	size_t const bytesize = hex ? 2 : 8;
+	int const base = hex ? 16 : 2;
+
+	char buf[bytesize+1];
 	uint64_t i;
-	unsigned char buf;
+	char *end;
 	unsigned char cur;
+	char rbuf;
 
-	cur = 0;
+	buf[bytesize] = '\0';
 
-	for (i = 8; fread(&buf, 1, 1, in) == 1; ) {
-		switch (buf) {
+	for (i = 0; fread(&rbuf, 1, 1, in);) {
+		switch (rbuf) {
 		case COMMENT:
 			/* gulp until newline or EOF */
 			while (1) {
-				if (fread(&buf, 1, 1, in) == 0) {
+				if (fread(&rbuf, 1, 1, in) == 0) {
 					return;
-				} else if (buf == '\n') {
+				} else if (rbuf == '\n') {
 					break;
 				}
 			}
 			break;
 		case '0':
 		case '1':
-			cur = (unsigned char)(cur | (buf - '0') << --i);
-
-			if (i == 0) {
-				if (fwrite(&cur, 1, 1, out) != 1) {
-					err(1, "write mcode");
-				}
-
-				i = 8;
-				cur = 0;
+			buf[i++] = rbuf;
+			break;
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case 'a':
+		case 'b':
+		case 'c':
+		case 'd':
+		case 'e':
+		case 'f':
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'D':
+		case 'E':
+		case 'F':
+			if (hex) {
+				buf[i++] = rbuf;
 			}
 			break;
+		}
+
+		if (i == bytesize) {
+			cur = (unsigned char)strtol(buf, &end, base);
+
+			if (errno == EINVAL || errno == ERANGE) {
+				err(1, "mcode byte invalid");
+			} else if (buf == end) {
+				err(1, "mcode no byte read");
+			}
+
+			i = 0;
+			if (fwrite(&cur, 1, 1, out) != 1) {
+				err(1, "write mcode");
+			}
 		}
 	}
 }

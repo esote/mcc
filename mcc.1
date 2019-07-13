@@ -14,7 +14,7 @@
 .\" You should have received a copy of the GNU Affero General Public License
 .\" along with this program.  If not, see <https://www.gnu.org/licenses/>.
 .\"
-.Dd $Mdocdate: June 16 2019 $
+.Dd $Mdocdate: July 13 2019 $
 .Dt MCC 1
 .Os
 .Sh NAME
@@ -22,7 +22,7 @@
 .Nd machine code compiler
 .Sh SYNOPSIS
 .Nm mcc
-.Op Fl 3s
+.Op Fl 3hs
 .Op Fl b Ar addr
 .Op Fl m Ar memsize
 .Op Fl o Ar file
@@ -31,9 +31,12 @@ file
 .Sh DESCRIPTION
 .Nm mcc
 is a machine code compiler.
-It reads ASCII text '0' and '1' mapping to machine code instructions.
+It reads binary ASCII text '0' and '1' mapping to machine code instructions.
 All other characters are ignored except the comment token ';'.
 Comments begin with ';' and continue until EOL.
+The
+.Fl h
+option enables parsing hexadecimal rather than binary text.
 .Pp
 Use the
 .Fl o
