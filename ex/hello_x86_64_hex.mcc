@@ -1,0 +1,19 @@
+; MCC
+
+; Compile with ./mcc.out -h -m 7 hello_x86_64_hex.mcc
+
+C7 04 25 00 20 40 00 48 00 00 00	; mov DWORD [buffer + 0], 'H'	; buffer is 0x402000
+C7 04 25 01 20 40 00 65 00 00 00	; mov DWORD [buffer + 1], 'e'
+C7 04 25 02 20 40 00 6C 00 00 00	; mov DWORD [buffer + 2], 'l'
+C7 04 25 03 20 40 00 6C 00 00 00	; mov DWORD [buffer + 3], 'l'
+C7 04 25 04 20 40 00 6F 00 00 00	; mov DWORD [buffer + 4], 'o'
+C7 04 25 05 20 40 00 21 00 00 00	; mov DWORD [buffer + 5], '!'
+C7 04 25 06 20 40 00 0A 00 00 00	; mov DWORD [buffer + 6], 0xA
+48 B8 01 00 00 00 00 00 00 00		; mov rax, 1			; sys_write
+48 BF 01 00 00 00 00 00 00 00		; mov rdi, 1			; stdout
+48 BE 00 20 40 00 00 00 00 00		; mov rsi, buffer
+48 BA 07 00 00 00 00 00 00 00		; mov rdx, 0x7			; buffer size
+0F 05					; syscall
+48 B8 3C 00 00 00 00 00 00 00		; mov rax, 60			; sys_exit
+48 BF 00 00 00 00 00 00 00 00		; mov rdi, 0			; exit success
+0F 05					; syscall
