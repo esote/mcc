@@ -8,7 +8,7 @@ $(PROG): $(SRCS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROG).out $(SRCS)
 
 debug: $(SRCS)
-	$(CC) -g -Wall -Wextra -Wconversion -o $(PROG).out $(SRCS)
+	$(CC) -g -Wall -Wextra -Wconversion -Wundef -o $(PROG).out $(SRCS)
 
 clean:
 	rm -f $(PROG).out

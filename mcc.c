@@ -75,7 +75,7 @@ main(int argc, char *argv[])
 			if (errno == EINVAL || errno == ERANGE) {
 				err(1, "bss address invalid");
 			} else if (optarg == end) {
-				err(1, "no bss address read");
+				errx(1, "no bss address read");
 			}
 
 			use_bss_addr = 1;

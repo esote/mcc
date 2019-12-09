@@ -14,7 +14,7 @@
 .\" You should have received a copy of the GNU Affero General Public License
 .\" along with this program.  If not, see <https://www.gnu.org/licenses/>.
 .\"
-.Dd $Mdocdate: July 13 2019 $
+.Dd $Mdocdate: December 9 2019 $
 .Dt MCC 1
 .Os
 .Sh NAME
@@ -31,9 +31,16 @@ file
 .Sh DESCRIPTION
 .Nm mcc
 is a machine code compiler.
-It reads binary ASCII text '0' and '1' mapping to machine code instructions.
-All other characters are ignored except the comment token ';'.
-Comments begin with ';' and continue until EOL.
+It reads binary ASCII text
+.Sq 0
+and
+.Sq 1
+mapping to machine code instructions.
+All other characters are ignored except the comment token
+.Sq \&; .
+Comments begin with
+.Sq \&;
+and continue until EOL.
 The
 .Fl h
 option enables parsing hexadecimal rather than binary text.
@@ -41,7 +48,8 @@ option enables parsing hexadecimal rather than binary text.
 Use the
 .Fl o
 option to specify the output filename.
-The default is to put the executable in \fIa.out\fR.
+The default is to put the executable in
+.Pa a.out .
 .Pp
 Supports little-endian x86-64 and i386 execution environments using the
 System V application binary interface. 64-bit is the default mode,
@@ -53,8 +61,9 @@ When writing to the .bss section, specify the size of memory reserved
 using the
 .Fl m
 option.
-If the size is zero (default), no .bss section will be written for the
-executable.
+If the size is zero
+.Pq default ,
+no .bss section will be written for the executable.
 .Pp
 In 64-bit mode the .bss and .text sections start at 0x402000 and
 0x401000 respectively, and in 32-bit mode 0x804a000 and 0x8049000
@@ -65,8 +74,8 @@ and
 .Fl t
 options to specify custom addresses.
 .Pp
-Program header segment alignment is set to 0x1000 (the page size on most
-systems).
+Program header segment alignment is set to 0x1000
+.Pq the page size on most systems .
 .Pp
  .bss is aligned to a 16-byte constraint and .text to an 8-byte
 constraint.
@@ -77,10 +86,14 @@ option to mark the .text section as writable, allowing self-modifying code.
 .Sh AUTHORS
 .Nm mcc
 was written by
-.An Esote
+.An Esote .
 .Sh COPYRIGHT
-Copyright (c) 2019 Esote.
+Copyright
+.Pq c
+2019 Esote.
 There is NO warranty.
 You may redistribute this software under the terms of the GNU Affero General
 Public License.
-For more information, see the LICENSE file.
+For more information, see the
+.Pa LICENSE
+file.
